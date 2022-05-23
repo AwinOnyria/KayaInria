@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from re import S
 from analysisfunctions import *
 from math import factorial
 import numpy as np
@@ -116,6 +117,14 @@ class kayaData:
             self.sdaStd.append(np.std(cl))
         self.sdaMean()
 
+    def deltaYi(self, i):
+        Y = self.dataT2[i]
+        for j in range(self.n):
+            if j != i:
+                Y *= self.dataT1[j]
+        return(Y)
+
+    
     def print_sda(self):
         if self.coefficients[0] == []:
             print("SDA non effectuée")
@@ -212,21 +221,21 @@ def main():
     Kaya9000.show_sda()
     Kaya9000.show_rankings()
     
-    Kaya0005.sdaGlobal()
-    Kaya0005.show_sda()
-    Kaya0005.show_rankings()
+    # Kaya0005.sdaGlobal()
+    # Kaya0005.show_sda()
+    # Kaya0005.show_rankings()
 
-    Kaya0510.sdaGlobal()
-    Kaya0510.show_sda()
-    Kaya0510.show_rankings()
+    # Kaya0510.sdaGlobal()
+    # Kaya0510.show_sda()
+    # Kaya0510.show_rankings()
 
-    Kaya1014.sdaGlobal()
-    Kaya1014.show_sda()
-    Kaya1014.show_rankings()
+    # Kaya1014.sdaGlobal()
+    # Kaya1014.show_sda()
+    # Kaya1014.show_rankings()
 
-    KayaGlobal.sdaGlobal()
-    KayaGlobal.show_sda()
-    KayaGlobal.show_rankings()
+    # KayaGlobal.sdaGlobal()
+    # KayaGlobal.show_sda()
+    # KayaGlobal.show_rankings()
 
 
 if __name__ == "__main__":

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from re import S
 from analysisfunctions import *
 from math import factorial
 import numpy as np
@@ -83,6 +82,15 @@ class kayaData:
         for T in zip(dataT1, dataT2):
             self.dataDelta.append(T[1] - T[0])
 
+    def deltaYi(self, i):
+        Y = self.dataT2[i]
+        for j in range(self.n):
+            if j != i:
+                Y *= self.dataT1[j]
+        return(Y)
+
+    # SDA
+
     def sda(self, indexes):
         return sda(self.dataT1, self.dataT2, self.dataDelta, indexes)
 
@@ -116,14 +124,6 @@ class kayaData:
         for cl in self.coefficients:
             self.sdaStd.append(np.std(cl))
         self.sdaMean()
-
-    def deltaYi(self, i):
-        Y = self.dataT2[i]
-        for j in range(self.n):
-            if j != i:
-                Y *= self.dataT1[j]
-        return(Y)
-
     
     def print_sda(self):
         if self.coefficients[0] == []:
@@ -147,6 +147,45 @@ class kayaData:
             print("Classements de A : ", self.rank_coefficients[2])
             print("Classements de P : ", self.rank_coefficients[3])
 
+    def show_sda(self):
+        fig_sda = plt.subplot()
+        legend_text = []
+        x_labels = []
+        for x in range(self.n):
+            fig_sda.plot(x + 1, self.sdaMin[x], "vk", label = '_nolegend_')
+            fig_sda.plot(x + 1, self.sdaMax[x], "^k", label = '_nolegend_')
+            bars = fig_sda.bar(x + 1, self.mean_coefficients[x], yerr = self.sdaStd[x], color = COLORS[x], width = .95, linewidth = .7, edgecolor = "black", capsize = 10)
+            fig_sda.bar_label(bars, label_type = "center")
+            legend_text.append(self.coefficients_names[x] + " | range : " + str(round(self.sdaMin[x], 3)) + " -> " + str(round(self.sdaMax[x], 3)) + " | std : " + str(round(self.sdaStd[x], 3)) + " (" + str(round(100 * self.sdaStd[x] / self.mean_coefficients[x], 1)) + "%)")
+            x_labels.append(self.coefficients_names[x])
+        fig_sda.set_xticks(np.arange(1, self.n + 1), x_labels)
+        fig_sda.set_title("Valeur moyenne des coefficients sur les {}! décompositions classiques pour la variation de {} à {}".format(self.n, self.years[0], self.years[1]), fontsize = 15)
+        fig_sda.legend(legend_text)
+        fig_sda.set_xlabel("Coefficients à décomposer", fontsize = 12)
+        fig_sda.set_ylabel("Valeurs des coefficients", fontsize = 12)
+        
+        mng = plt.get_current_fig_manager()
+        mng.window.showMaximized()
+        plt.show()
+
+
+    # IDA
+
+    def ida_mult_param_two(self, alpha = None):
+        return mult_parametric_method_two(self.dataT1, self.dataT2, alpha)
+
+    def ida_add_param_one(self, alpha = 0.5):
+        return add_parametric_method_one(self.dataT1, self.dataT2, alpha)
+    
+    def ida_add_non_param_one(self):
+        return add_non_parametric_method_one(self.dataT1, self.dataT2)
+    
+    def ida_add_param_two(self, alpha = None):
+        return add_parametric_method_two(self.dataT1, self.dataT2, alpha)
+
+
+    # Results
+    
     def show_rankings(self):
         fig_ranks = plt.subplot()
         d = 1
@@ -171,29 +210,6 @@ class kayaData:
         mng = plt.get_current_fig_manager()
         mng.window.showMaximized()
         plt.show()
-
-    def show_sda(self):
-        fig_sda = plt.subplot()
-        legend_text = []
-        x_labels = []
-        for x in range(self.n):
-            fig_sda.plot(x + 1, self.sdaMin[x], "vk", label = '_nolegend_')
-            fig_sda.plot(x + 1, self.sdaMax[x], "^k", label = '_nolegend_')
-            bars = fig_sda.bar(x + 1, self.mean_coefficients[x], yerr = self.sdaStd[x], color = COLORS[x], width = .95, linewidth = .7, edgecolor = "black", capsize = 10)
-            fig_sda.bar_label(bars, label_type = "center")
-            legend_text.append(self.coefficients_names[x] + " | range : " + str(round(self.sdaMin[x], 3)) + " -> " + str(round(self.sdaMax[x], 3)) + " | std : " + str(round(self.sdaStd[x], 3)) + " (" + str(round(100 * self.sdaStd[x] / self.mean_coefficients[x], 1)) + "%)")
-            x_labels.append(self.coefficients_names[x])
-        fig_sda.set_xticks(np.arange(1, self.n + 1), x_labels)
-        fig_sda.set_title("Valeur moyenne des coefficients sur les {}! décompositions classiques pour la variation de {} à {}".format(self.n, self.years[0], self.years[1]), fontsize = 15)
-        fig_sda.legend(legend_text)
-        fig_sda.set_xlabel("Coefficients à décomposer", fontsize = 12)
-        fig_sda.set_ylabel("Valeurs des coefficients", fontsize = 12)
-        
-        mng = plt.get_current_fig_manager()
-        mng.window.showMaximized()
-        plt.show()
-
-            
             
 
 
@@ -218,9 +234,29 @@ def main():
     KayaGlobal = kayaData(NDataY[1990], NDataY[2014], (1990, 2014), Names)
     
     Kaya9000.sdaGlobal()
-    Kaya9000.show_sda()
-    Kaya9000.show_rankings()
-    
+    # Kaya9000.show_sda()
+    # Kaya9000.show_rankings()
+    print(np.prod(Kaya9000.dataT2))
+    print("mult_param_two")
+    print(Kaya9000.ida_mult_param_two(), np.prod(Kaya9000.ida_mult_param_two()))
+    print(Kaya9000.ida_mult_param_two(0), np.prod(Kaya9000.ida_mult_param_two(0)))
+    print(Kaya9000.ida_mult_param_two(0.5), np.prod(Kaya9000.ida_mult_param_two(.5)))
+    print(Kaya9000.ida_mult_param_two(1), np.prod(Kaya9000.ida_mult_param_two(1)))
+    print("\n", np.prod(Kaya9000.dataT2) - 1, sep ="")
+    print("add_param_one")
+    print(Kaya9000.ida_add_param_one(0), sum(Kaya9000.ida_add_param_one(0)))
+    print(Kaya9000.ida_add_param_one(), sum(Kaya9000.ida_add_param_one()))
+    print(Kaya9000.ida_add_param_one(1), sum(Kaya9000.ida_add_param_one(1)))
+    print("add_non_param_one")
+    print(Kaya9000.ida_add_non_param_one(), sum(Kaya9000.ida_add_non_param_one()))
+    print("add_param_two")
+    print(Kaya9000.ida_add_param_two(), sum(Kaya9000.ida_add_param_two()))
+    print(Kaya9000.ida_add_param_two(0), sum(Kaya9000.ida_add_param_two(0)))
+    print(Kaya9000.ida_add_param_two(0.5), sum(Kaya9000.ida_add_param_two(.5)))
+    print(Kaya9000.ida_add_param_two(1), sum(Kaya9000.ida_add_param_two(1)))
+    print("\nsda")
+    print(Kaya9000.mean_coefficients)
+
     # Kaya0005.sdaGlobal()
     # Kaya0005.show_sda()
     # Kaya0005.show_rankings()

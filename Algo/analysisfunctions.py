@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-from itertools import permutations, combinations
-from this import d #fonction combinations à utiliser pour l'optimisation de Rørmose et Olsen
+from itertools import permutations, combinations #fonction combinations à utiliser pour l'optimisation de Rørmose et Olsen
 import numpy as np
 
 
@@ -112,5 +111,6 @@ def add_parametric_method_two(dataT1, dataT2, alpha = None):
         if alpha is None:
             alpha = ((dataT2[i] - dataT1[i]) * (Y1 / dataT1[i]) - np.log(dataT2[i] / dataT1[i]) * Y1)
             alpha /= ((Y2 - Y1) * np.log(dataT2[i] / dataT1[i]) - (Y2 / dataT2[i] - Y1 * dataT1[i]) * (dataT2[i] - dataT1[i]))
-        D_factors.append((dataT2[i] - dataT1[i]) * ((Y1 / dataT1[i]) + (Y2 / dataT2[i] - Y1 / dataT1[i])))
+        D_factors.append((dataT2[i] - dataT1[i]) * ((Y1 / dataT1[i]) + alpha * (Y2 / dataT2[i] - Y1 / dataT1[i])))
+    return D_factors
         

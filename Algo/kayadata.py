@@ -233,9 +233,11 @@ def main():
     Kaya1014 = kayaData(NDataY[2010], NDataY[2014], (2010, 2014), Names)
     KayaGlobal = kayaData(NDataY[1990], NDataY[2014], (1990, 2014), Names)
     
+
     Kaya9000.sdaGlobal()
     # Kaya9000.show_sda()
     # Kaya9000.show_rankings()
+
     P = np.prod(Kaya9000.dataT2)
     print(P)
     print("mult_param_two")
@@ -259,6 +261,10 @@ def main():
     print(Kaya9000.ida_add_param_two(1), sum(Kaya9000.ida_add_param_two(1)), "res = ", S - sum(Kaya9000.ida_add_param_two(1)))
     print("\nsda")
     print(Kaya9000.mean_coefficients)
+    res_sda = 0
+    for i in range(Kaya9000.n):
+        res_sda += Kaya9000.mean_coefficients[i] * Kaya9000.dataDelta[i]
+    print(res_sda)
 
     # Kaya0005.sdaGlobal()
     # Kaya0005.show_sda()

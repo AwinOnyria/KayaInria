@@ -40,8 +40,7 @@ def sda(dataT1, dataT2, dataDelta, indexes):
             elif k > i[1]:
                 c *= dataT2[indexes[k]]
             # else:
-            #     c *= dataDelta[indexes[k]]
-        # coefficientsFactors[i[0]] = c*dataDelta[i[0]]
+            #     c *= dataDelta[i[0]]
         coefficientsFactors[i[0]] = c
     return coefficientsFactors
 

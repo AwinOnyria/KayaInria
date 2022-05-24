@@ -83,6 +83,8 @@ def mult_parametric_method_two(dataT1, dataT2, alpha = None):
 # Additive (Y2 - Y1) = sum
 
 def add_parametric_method_one(dataT1, dataT2, alpha = 0.5):
+    if alpha is None:
+        return None
     n = len(dataT1)
     D_factors = []
     Y1 = np.prod(dataT1)

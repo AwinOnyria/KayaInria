@@ -54,8 +54,12 @@ class kayaData:
     def __init__(self, dataT1, dataT2, years = (0,0), coefficient_names = []):
         self.dataT1 = dataT1
         self.dataT2 = dataT2
-        self.years = years
+        self.Y1 = np.prod(dataT1)
+        self.Y2 = np.prod(dataT2)
         self.dataDelta = []
+        for T in zip(dataT1, dataT2):
+            self.dataDelta.append(T[1] - T[0])
+        self.years = years
         self.n = len(dataT1) #The number of coefficients
         self.coefficients_names = []
         self.reduced_c_names = []
@@ -88,8 +92,7 @@ class kayaData:
             self.sda_weights.append([])
             self.sda_rank_coefficients.append([0] * self.n)
             self.sda_rank_weights.append([0] * self.n)
-        for T in zip(dataT1, dataT2):
-            self.dataDelta.append(T[1] - T[0])
+        self.ida_coefficients = {}
 
     def deltaYi(self, i):
         Y = self.dataT2[i]
@@ -274,16 +277,46 @@ class kayaData:
     # IDA
 
     def ida_mult_param_two(self, alpha = None):
+        if alpha is None:
+            self.ida_coefficients["IDA mult_param_2 | a_weighting"] = mult_parametric_method_two(self.dataT1, self.dataT2, alpha)
+        self.ida_coefficients["IDA mult_param_2 | α = " + str()] = mult_parametric_method_two(self.dataT1, self.dataT2, alpha)
         return mult_parametric_method_two(self.dataT1, self.dataT2, alpha)
 
     def ida_add_param_one(self, alpha = 0.5):
+        self.ida_coefficients["IDA add_param_one | α = " + str(alpha)] = add_parametric_method_one(self.dataT1, self.dataT2, alpha)
         return add_parametric_method_one(self.dataT1, self.dataT2, alpha)
     
     def ida_add_non_param_one(self):
+        self.ida_coefficients["IDA add_non_param_one"] = add_non_parametric_method_one(self.dataT1, self.dataT2)
         return add_non_parametric_method_one(self.dataT1, self.dataT2)
     
     def ida_add_param_two(self, alpha = None):
+        if alpha is None:
+            self.ida_coefficients["IDA add_param_two | a_weighting" + str(alpha)] = add_parametric_method_two(self.dataT1, self.dataT2, alpha)
+        self.ida_coefficients["IDA add_param_two | α = " + str(alpha)] = add_parametric_method_two(self.dataT1, self.dataT2, alpha)
         return add_parametric_method_two(self.dataT1, self.dataT2, alpha)
+
+    def ida_residuals(self, func, adaptative=True, incr=.1, mult=False, param=True):
+        if param:
+            residuals = {}
+            if mult:
+                if func(None) is not None:
+                    residuals[None] = abs(1 - (self.Y2 / self.Y1) / np.prod(func(None)))
+                for alpha in np.arange(0, 1, incr):
+                    residuals[round(alpha, 2)] = abs(1 - (self.Y2 / self.Y1) / np.prod(func(round(alpha, 2))))
+                residuals[1.0] = abs(1 - (self.Y2 / self.Y1) / np.prod(func(1.0)))
+            else:
+                if func(None) is not None:
+                    residuals[None] = abs(self.Y2 - self.Y1 - sum(func(None)))
+                for alpha in np.arange(0, 1, incr):
+                    residuals[round(alpha, 2)] = abs(self.Y2 - self.Y1 - sum(func(round(alpha, 2))))
+                residuals[1.0] = abs(self.Y2 - self.Y1 - sum(func(1.0)))
+            return residuals
+        else:
+            if mult:
+                return(-1, abs(1 - (self.Y2 / self.Y1) / np.prod(func())))
+            else:
+                return(-1, abs(sum(func())))
 
 
     # Results
@@ -314,10 +347,10 @@ def main():
     
 
     Kaya9000.sdaGlobal()
-    Kaya9000.show_sda_coefficients()
-    Kaya9000.show_sda_coefficients_rankings()
-    Kaya9000.show_sda_weights()
-    Kaya9000.show_sda_weights_rankings()
+    # Kaya9000.show_sda_coefficients()
+    # Kaya9000.show_sda_coefficients_rankings()
+    # Kaya9000.show_sda_weights()
+    # Kaya9000.show_sda_weights_rankings()
 
     P = np.prod(Kaya9000.dataT2)
     print(P)
@@ -342,10 +375,11 @@ def main():
     print(Kaya9000.ida_add_param_two(1), sum(Kaya9000.ida_add_param_two(1)), "res = ", S - sum(Kaya9000.ida_add_param_two(1)))
     print("\nsda")
     print(Kaya9000.sda_mean_coefficients)
-    res_sda = 0
-    for i in range(Kaya9000.n):
-        res_sda += Kaya9000.sda_mean_coefficients[i] * Kaya9000.dataDelta[i]
-    print(res_sda)
+    print(sum(Kaya9000.sda_mean_coefficients))
+
+    print(Kaya9000.ida_residuals(Kaya9000.ida_mult_param_two, mult=True))
+    print()
+    print(Kaya9000.ida_residuals(Kaya9000.ida_add_param_one))
 
     # Kaya0005.sdaGlobal()
     # Kaya0005.show_sda_coefficients()

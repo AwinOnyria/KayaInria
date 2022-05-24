@@ -31,7 +31,8 @@ def sda(dataT1, dataT2, dataDelta, indexes):
     Functions that perform a structural decomposition analysis given an indexes list that gives one order for the n coefficients among the n! possibilities for that order.
     """
     n = len(indexes)
-    coefficientsFactors = [0] * n
+    coefficientWeights = [0] * n
+    coefficientFactors = [0] * n
     for i in zip(indexes, range(n)):
         c = 1
         for k in range(n):
@@ -39,10 +40,9 @@ def sda(dataT1, dataT2, dataDelta, indexes):
                 c *= dataT1[indexes[k]]
             elif k > i[1]:
                 c *= dataT2[indexes[k]]
-            # else:
-            #     c *= dataDelta[i[0]]
-        coefficientsFactors[i[0]] = c
-    return coefficientsFactors
+        coefficientFactors[i[0]] = c * dataDelta[i[0]]
+        coefficientWeights[i[0]] = c
+    return coefficientWeights, coefficientFactors
 
 def genOrders(n):
     l = list(range(n))
@@ -65,7 +65,6 @@ def sda_test(indexes):
 
 
 ## Functions for IDA
-
 
 # Multiplicative (Y2 / Y1) = prod
 

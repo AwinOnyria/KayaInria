@@ -73,6 +73,7 @@ class kayaData:
                     self.coefficients_names.append(coefficient_names[i])
                 else:
                     self.reduced_c_names.append(coefficient_names[i])
+        
         self.sdaMin = [0] * self.n
         self.sdaMax = [0] * self.n
         self.sda_range = [0] * self.n
@@ -92,7 +93,10 @@ class kayaData:
             self.sda_weights.append([])
             self.sda_rank_coefficients.append([0] * self.n)
             self.sda_rank_weights.append([0] * self.n)
+
         self.ida_coefficients = {}
+        self.ida_residuals_results = {}
+        self.ida_alpha_values = {}
 
     def deltaYi(self, i):
         Y = self.dataT2[i]
@@ -277,32 +281,33 @@ class kayaData:
     # IDA
 
     def ida_mult_param_two(self, alpha = None):
-        if alpha is None:
-            self.ida_coefficients["IDA mult_param_2 | a_weighting"] = mult_parametric_method_two(self.dataT1, self.dataT2, alpha)
-        self.ida_coefficients["IDA mult_param_2 | α = " + str()] = mult_parametric_method_two(self.dataT1, self.dataT2, alpha)
+        # if alpha is None:
+        #     self.ida_coefficients["IDA mult_param_2 | a_weighting"] = mult_parametric_method_two(self.dataT1, self.dataT2, alpha)
+        # self.ida_coefficients["IDA mult_param_2 | α = " + str(alpha)] = mult_parametric_method_two(self.dataT1, self.dataT2, alpha)
         return mult_parametric_method_two(self.dataT1, self.dataT2, alpha)
 
     def ida_add_param_one(self, alpha = 0.5):
-        self.ida_coefficients["IDA add_param_one | α = " + str(alpha)] = add_parametric_method_one(self.dataT1, self.dataT2, alpha)
+        # self.ida_coefficients["IDA add_param_one | α = " + str(alpha)] = add_parametric_method_one(self.dataT1, self.dataT2, alpha)
         return add_parametric_method_one(self.dataT1, self.dataT2, alpha)
     
     def ida_add_non_param_one(self):
-        self.ida_coefficients["IDA add_non_param_one"] = add_non_parametric_method_one(self.dataT1, self.dataT2)
+        # self.ida_coefficients["IDA add_non_param_one"] = add_non_parametric_method_one(self.dataT1, self.dataT2)
         return add_non_parametric_method_one(self.dataT1, self.dataT2)
     
     def ida_add_param_two(self, alpha = None):
-        if alpha is None:
-            self.ida_coefficients["IDA add_param_two | a_weighting" + str(alpha)] = add_parametric_method_two(self.dataT1, self.dataT2, alpha)
-        self.ida_coefficients["IDA add_param_two | α = " + str(alpha)] = add_parametric_method_two(self.dataT1, self.dataT2, alpha)
+        # if alpha is None:
+        #     self.ida_coefficients["IDA add_param_two | a_weighting" + str(alpha)] = add_parametric_method_two(self.dataT1, self.dataT2, alpha)
+        # self.ida_coefficients["IDA add_param_two | α = " + str(alpha)] = add_parametric_method_two(self.dataT1, self.dataT2, alpha)
         return add_parametric_method_two(self.dataT1, self.dataT2, alpha)
 
-    def ida_residuals(self, func, adaptative=True, incr=.1, mult=False, param=True):
+    def ida_residuals(self, func, incr=.1, mult=False, param=True):
         if param:
             residuals = {}
             if mult:
                 if func(None) is not None:
                     residuals[None] = abs(1 - (self.Y2 / self.Y1) / np.prod(func(None)))
                 for alpha in np.arange(0, 1, incr):
+                    print(alpha)
                     residuals[round(alpha, 2)] = abs(1 - (self.Y2 / self.Y1) / np.prod(func(round(alpha, 2))))
                 residuals[1.0] = abs(1 - (self.Y2 / self.Y1) / np.prod(func(1.0)))
             else:
@@ -318,6 +323,27 @@ class kayaData:
             else:
                 return(-1, abs(sum(func())))
 
+    def idaGlobal(self, incr = .1):
+        self.ida_functions = [(self.ida_mult_param_two, True, True), (self.ida_add_param_one, False, True), (self.ida_add_non_param_one, False, False), (self.ida_add_param_two, False, True)]
+        for f in self.ida_functions:
+            self.ida_residuals_results[str(f[0]).split()[2].split(".")[1]] = self.ida_residuals(f[0], incr, f[1], f[2])
+
+        for res in zip(self.ida_functions, self.ida_residuals_results.keys()):
+            if type(self.ida_residuals_results[res[1]]) == dict:
+                key = min_dict_key(self.ida_residuals_results[res[1]])
+                self.ida_coefficients[str(res[0][0]).split()[2].split(".")[1]] = res[0][0](key)
+                self.ida_coefficients[str(res[0][0]).split()[2].split(".")[1]].append(self.ida_residuals_results[res[1]][key])
+                self.ida_alpha_values[str(res[0][0]).split()[2].split(".")[1]] = key
+            else:
+                self.ida_coefficients[str(res[0][0]).split()[2].split(".")[1]] = res[0][0]()
+                self.ida_coefficients[str(res[0][0]).split()[2].split(".")[1]].append(self.ida_residuals_results[res[1]][1])
+                self.ida_alpha_values[str(res[0][0]).split()[2].split(".")[1]] = "No parameter"
+
+    def show_ida_residuals(self):
+    
+
+
+        
 
     # Results
     
@@ -380,6 +406,13 @@ def main():
     print(Kaya9000.ida_residuals(Kaya9000.ida_mult_param_two, mult=True))
     print()
     print(Kaya9000.ida_residuals(Kaya9000.ida_add_param_one))
+
+    Kaya9000.idaGlobal(0.05)
+    print(Kaya9000.ida_residuals_results)
+    print()
+    print(Kaya9000.ida_coefficients)
+    print()
+    print(Kaya9000.ida_alpha_values)
 
     # Kaya0005.sdaGlobal()
     # Kaya0005.show_sda_coefficients()

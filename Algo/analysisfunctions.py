@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-from itertools import permutations, combinations #fonction combinations à utiliser pour l'optimisation de Rørmose et Olsen
+from itertools import permutations, combinations
+from xmlrpc.client import MAXINT #fonction combinations à utiliser pour l'optimisation de Rørmose et Olsen
 import numpy as np
 
 
@@ -11,16 +12,26 @@ def rank_dict(d, n):
     excl = []
     ranking = []
     for i in range(n):
-        max = None
+        Max = None
         max_k = None
         for key in d:
             if key not in excl:
-                if max is None or abs(d[key]) > max:
-                    max = abs(d[key])
+                if Max is None or abs(d[key]) > Max:
+                    Max = abs(d[key])
                     max_k = key
         ranking.append(max_k)
         excl.append(max_k)
     return ranking
+
+def min_dict_key(d):
+    Min = float('inf')
+    for k in d.keys():
+        if d[k] < Min:
+            min_k = k
+            Min = d[k]
+    return min_k
+
+
 
 
 ## Functions for SDA 

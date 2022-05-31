@@ -79,7 +79,7 @@ def sda_test(indexes):
 
 # Multiplicative (Y2 / Y1) = prod
 
-def mult_parametric_method_two(dataT1, dataT2, alpha = None):
+def mult_parametric_method_two(dataT1, dataT2, result, alpha = None):
     n = len(dataT1)
     D_factors = []
     Y1 = np.prod(dataT1)
@@ -89,11 +89,11 @@ def mult_parametric_method_two(dataT1, dataT2, alpha = None):
             alpha = (dataT2[i] - dataT1[i]) / dataT1[i] - np.log(dataT2[i] / dataT1[i]) * Y1
             alpha /= 0 - (1 / dataT2[i] - 1 / dataT1[i]) * (dataT2[i] - dataT1[i])
         D_factors.append(np.exp((dataT2[i] - dataT1[i]) * (1 / dataT1[i] + alpha * (1 / dataT2[i] - 1 / dataT1[i]))))
-    return D_factors
+    return D_factors.append(result / np.prod(D_factors))
 
 # Additive (Y2 - Y1) = sum
 
-def add_parametric_method_one(dataT1, dataT2, alpha = 0.5):
+def add_parametric_method_one(dataT1, dataT2, result, alpha = 0.5):
     if alpha is None:
         return None
     n = len(dataT1)
@@ -102,18 +102,18 @@ def add_parametric_method_one(dataT1, dataT2, alpha = 0.5):
     Y2 = np.prod(dataT2)
     for i in range(n):
         D_factors.append(np.log(dataT2[i] / dataT1[i]) * (Y1 + alpha * (Y2 - Y1)))
-    return D_factors
+    return D_factors.append(result - sum(D_factors))
 
-def add_non_parametric_method_one(dataT1, dataT2):
+def add_non_parametric_method_one(dataT1, dataT2, result):
     n = len(dataT1)
     D_factors = []
     Y1 = np.prod(dataT1)
     Y2 = np.prod(dataT2)
     for i in range(n):
         D_factors.append(np.log(dataT2[i] / dataT1[i]) * (Y2 - Y1) / np.log(Y2 / Y1))
-    return D_factors
+    return D_factors.append(result - sum(D_factors))
 
-def add_parametric_method_two(dataT1, dataT2, alpha = None):
+def add_parametric_method_two(dataT1, dataT2, result, alpha = None):
     n = len(dataT1)
     D_factors = []
     Y1 = np.prod(dataT1)
@@ -123,5 +123,5 @@ def add_parametric_method_two(dataT1, dataT2, alpha = None):
             alpha = ((dataT2[i] - dataT1[i]) * (Y1 / dataT1[i]) - np.log(dataT2[i] / dataT1[i]) * Y1)
             alpha /= ((Y2 - Y1) * np.log(dataT2[i] / dataT1[i]) - (Y2 / dataT2[i] - Y1 * dataT1[i]) * (dataT2[i] - dataT1[i]))
         D_factors.append((dataT2[i] - dataT1[i]) * ((Y1 / dataT1[i]) + alpha * (Y2 / dataT2[i] - Y1 / dataT1[i])))
-    return D_factors
+    return D_factors.append(result - sum(D_factors))
         

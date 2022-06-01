@@ -95,7 +95,7 @@ class kayaData:
             self.sda_rank_weights.append([0] * self.n)
 
         self.ida_coefficients = {}
-        self.ida_residuals_results = {}
+        self.ida_results = {}
         self.ida_alpha_values = {}
 
     def deltaYi(self, i):
@@ -290,9 +290,9 @@ class kayaData:
         # self.ida_coefficients["IDA add_param_one | α = " + str(alpha)] = add_parametric_method_one(self.dataT1, self.dataT2, alpha)
         return add_parametric_method_one(self.dataT1, self.dataT2, self.Y2 - self.Y1, alpha)
     
-    def ida_add_non_param_one(self):
+    def ida_add_non_param_one(self, alpha):
         # self.ida_coefficients["IDA add_non_param_one"] = add_non_parametric_method_one(self.dataT1, self.dataT2)
-        return add_non_parametric_method_one(self.dataT1, self.dataT2, self.Y2 - self.Y1)
+        return add_non_parametric_method_one(self.dataT1, self.dataT2, self.Y2 - self.Y1, alpha)
     
     def ida_add_param_two(self, alpha = None):
         # if alpha is None:
@@ -322,27 +322,74 @@ class kayaData:
     #         else:
     #             return(-1, abs(sum(func())))
 
-    def ida_calculate(self, incr = .1):
-        pass
+    def ida_calculate(self, func, incr = .1):
+        results = {}
+        for alpha in np.arange(0, 1+incr, incr):
+            if func(alpha) is None:
+                break
+            else:
+                results[alpha] = func(alpha)
+        if func(None) is not None:
+            results[None] = func(None)
+        return results
+
 
     def idaGlobal(self, incr = .1):
         self.ida_functions = [self.ida_mult_param_two, self.ida_add_param_one, self.ida_add_non_param_one, self.ida_add_param_two]
         for f in self.ida_functions:
-            self.ida_residuals_results[str(f).split()[2].split(".")[1]] = self.ida_residuals(f, incr)
+            self.ida_results[str(f).split()[2].split(".")[1]] = self.ida_calculate(f, incr)
 
-        for res in zip(self.ida_functions, self.ida_residuals_results.keys()):
-            if type(self.ida_residuals_results[res[1]]) == dict:
-                key = min_dict_key(self.ida_residuals_results[res[1]])
-                self.ida_coefficients[str(res[0][0]).split()[2].split(".")[1]] = res[0][0](key)
-                self.ida_coefficients[str(res[0][0]).split()[2].split(".")[1]].append(self.ida_residuals_results[res[1]][key])
-                self.ida_alpha_values[str(res[0][0]).split()[2].split(".")[1]] = key
-            else:
-                self.ida_coefficients[str(res[0][0]).split()[2].split(".")[1]] = res[0][0]()
-                self.ida_coefficients[str(res[0][0]).split()[2].split(".")[1]].append(self.ida_residuals_results[res[1]][1])
-                self.ida_alpha_values[str(res[0][0]).split()[2].split(".")[1]] = "No parameter"
+        # for res in zip(self.ida_functions, self.ida_residuals_results.keys()):
+        #     if type(self.ida_residuals_results[res[1]]) == dict:
+        #         key = min_dict_key(self.ida_residuals_results[res[1]])
+        #         self.ida_coefficients[str(res[0][0]).split()[2].split(".")[1]] = res[0][0](key)
+        #         self.ida_coefficients[str(res[0][0]).split()[2].split(".")[1]].append(self.ida_residuals_results[res[1]][key])
+        #         self.ida_alpha_values[str(res[0][0]).split()[2].split(".")[1]] = key
+        #     else:
+        #         self.ida_coefficients[str(res[0][0]).split()[2].split(".")[1]] = res[0][0]()
+        #         self.ida_coefficients[str(res[0][0]).split()[2].split(".")[1]].append(self.ida_residuals_results[res[1]][1])
+        #         self.ida_alpha_values[str(res[0][0]).split()[2].split(".")[1]] = "No parameter"
 
     def show_ida_trials(self):
-        pass
+        for ida_name in self.ida_results.keys():
+            fig = plt.subplot()
+            labels = []
+            coefficients = []
+            left_pos = []
+            for i in range(self.n + 1):
+                coefficients.append([])
+                left_pos.append([])
+            positions = []
+            for alpha in self.ida_results[ida_name].keys():
+                # print(str(alpha))
+                labels.append(str(alpha))
+                positions.append(0)
+                for coef in zip(self.ida_results[ida_name][alpha], range(self.n + 1)):
+                    coefficients[coef[1]].append(abs(coef[0]))
+            
+            for i in range(self.n + 1):
+                for j in range(len(positions)):
+                    left_pos[i].append(positions[j])
+                    positions[j] += coefficients[i][j]
+            
+            n_coef_names = self.coefficients_names.copy()
+            n_coef_names.append("Residual")
+            # print(n_coef_names)
+            # print(labels)
+            # print()
+            for i in range(self.n + 1):
+                # print()
+                # print(i)
+                # print(coefficients[i])
+                # print(n_coef_names[i+1])
+                bars = fig.barh(labels, coefficients[i], left = left_pos[i], label = n_coef_names[i])
+                fig.bar_label(bars, label_type = 'center')
+            fig.legend()
+            
+            mng = plt.get_current_fig_manager()
+            mng.window.showMaximized()
+            plt.show()
+
 
     
 
@@ -377,46 +424,46 @@ def main():
     
 
     Kaya9000.sdaGlobal()
-    Kaya9000.show_sda_coefficients()
-    Kaya9000.show_sda_coefficients_rankings()
-    Kaya9000.show_sda_weights()
-    Kaya9000.show_sda_weights_rankings()
+    # Kaya9000.show_sda_coefficients()
+    # Kaya9000.show_sda_coefficients_rankings()
+    # Kaya9000.show_sda_weights()
+    # Kaya9000.show_sda_weights_rankings()
 
-    P = np.prod(Kaya9000.dataT2)
-    print(P)
-    print("mult_param_two")
-    print(Kaya9000.ida_mult_param_two(), np.prod(Kaya9000.ida_mult_param_two()), "res = ", P / np.prod(Kaya9000.ida_mult_param_two()))
-    print(Kaya9000.ida_mult_param_two(0), np.prod(Kaya9000.ida_mult_param_two(0)), "res = ", P /  np.prod(Kaya9000.ida_mult_param_two(0)))
-    print(Kaya9000.ida_mult_param_two(0.5), np.prod(Kaya9000.ida_mult_param_two(.5)), "res = ", P /  np.prod(Kaya9000.ida_mult_param_two(.5)))
-    print(Kaya9000.ida_mult_param_two(1), np.prod(Kaya9000.ida_mult_param_two(1)), "res = ", P /  np.prod(Kaya9000.ida_mult_param_two(1)))
+    # P = np.prod(Kaya9000.dataT2)
+    # print(P)
+    # print("mult_param_two")
+    # print(Kaya9000.ida_mult_param_two(), np.prod(Kaya9000.ida_mult_param_two()), "res = ", P / np.prod(Kaya9000.ida_mult_param_two()))
+    # print(Kaya9000.ida_mult_param_two(0), np.prod(Kaya9000.ida_mult_param_two(0)), "res = ", P /  np.prod(Kaya9000.ida_mult_param_two(0)))
+    # print(Kaya9000.ida_mult_param_two(0.5), np.prod(Kaya9000.ida_mult_param_two(.5)), "res = ", P /  np.prod(Kaya9000.ida_mult_param_two(.5)))
+    # print(Kaya9000.ida_mult_param_two(1), np.prod(Kaya9000.ida_mult_param_two(1)), "res = ", P /  np.prod(Kaya9000.ida_mult_param_two(1)))
     
-    S = P - 1
-    print("\n", S, sep ="")
-    print("add_param_one")
-    print(Kaya9000.ida_add_param_one(0), sum(Kaya9000.ida_add_param_one(0)), "res = ", S - sum(Kaya9000.ida_add_param_one(0)))
-    print(Kaya9000.ida_add_param_one(), sum(Kaya9000.ida_add_param_one()), "res = ", S - sum(Kaya9000.ida_add_param_one()))
-    print(Kaya9000.ida_add_param_one(1), sum(Kaya9000.ida_add_param_one(1)), "res = ", S - sum(Kaya9000.ida_add_param_one(1)))
-    print("add_non_param_one")
-    print(Kaya9000.ida_add_non_param_one(), sum(Kaya9000.ida_add_non_param_one()), "res = ", S - sum(Kaya9000.ida_add_non_param_one()))
-    print("add_param_two")
-    print(Kaya9000.ida_add_param_two(), sum(Kaya9000.ida_add_param_two()), "res = ", S - sum(Kaya9000.ida_add_param_two()))
-    print(Kaya9000.ida_add_param_two(0), sum(Kaya9000.ida_add_param_two(0)), "res = ", S - sum(Kaya9000.ida_add_param_two(0)))
-    print(Kaya9000.ida_add_param_two(0.5), sum(Kaya9000.ida_add_param_two(.5)), "res = ", S - sum(Kaya9000.ida_add_param_two(.5)))
-    print(Kaya9000.ida_add_param_two(1), sum(Kaya9000.ida_add_param_two(1)), "res = ", S - sum(Kaya9000.ida_add_param_two(1)))
-    print("\nsda")
-    print(Kaya9000.sda_mean_coefficients)
-    print(sum(Kaya9000.sda_mean_coefficients))
+    # S = P - 1
+    # print("\n", S, sep ="")
+    # print("add_param_one")
+    # print(Kaya9000.ida_add_param_one(0), sum(Kaya9000.ida_add_param_one(0)), "res = ", S - sum(Kaya9000.ida_add_param_one(0)))
+    # print(Kaya9000.ida_add_param_one(), sum(Kaya9000.ida_add_param_one()), "res = ", S - sum(Kaya9000.ida_add_param_one()))
+    # print(Kaya9000.ida_add_param_one(1), sum(Kaya9000.ida_add_param_one(1)), "res = ", S - sum(Kaya9000.ida_add_param_one(1)))
+    # print("add_non_param_one")
+    # print(Kaya9000.ida_add_non_param_one(), sum(Kaya9000.ida_add_non_param_one()), "res = ", S - sum(Kaya9000.ida_add_non_param_one()))
+    # print("add_param_two")
+    # print(Kaya9000.ida_add_param_two(), sum(Kaya9000.ida_add_param_two()), "res = ", S - sum(Kaya9000.ida_add_param_two()))
+    # print(Kaya9000.ida_add_param_two(0), sum(Kaya9000.ida_add_param_two(0)), "res = ", S - sum(Kaya9000.ida_add_param_two(0)))
+    # print(Kaya9000.ida_add_param_two(0.5), sum(Kaya9000.ida_add_param_two(.5)), "res = ", S - sum(Kaya9000.ida_add_param_two(.5)))
+    # print(Kaya9000.ida_add_param_two(1), sum(Kaya9000.ida_add_param_two(1)), "res = ", S - sum(Kaya9000.ida_add_param_two(1)))
+    # print("\nsda")
+    # print(Kaya9000.sda_mean_coefficients)
+    # print(sum(Kaya9000.sda_mean_coefficients))
 
-    print(Kaya9000.ida_residuals(Kaya9000.ida_mult_param_two, mult=True))
-    print()
-    print(Kaya9000.ida_residuals(Kaya9000.ida_add_param_one))
+    # print(Kaya9000.ida_residuals(Kaya9000.ida_mult_param_two, mult=True))
+    # print()
+    # print(Kaya9000.ida_residuals(Kaya9000.ida_add_param_one))
 
-    Kaya9000.idaGlobal(0.05)
-    print(Kaya9000.ida_residuals_results)
-    print()
-    print(Kaya9000.ida_coefficients)
-    print()
-    print(Kaya9000.ida_alpha_values)
+    Kaya9000.idaGlobal(0.1)
+    # print(Kaya9000.ida_results)
+
+    # print(Kaya9000.ida_mult_param_two(0))
+
+    Kaya9000.show_ida_trials()
 
     # Kaya0005.sdaGlobal()
     # Kaya0005.show_sda_coefficients()

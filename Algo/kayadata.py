@@ -424,10 +424,10 @@ def main():
     
 
     Kaya9000.sdaGlobal()
-    # Kaya9000.show_sda_coefficients()
-    # Kaya9000.show_sda_coefficients_rankings()
-    # Kaya9000.show_sda_weights()
-    # Kaya9000.show_sda_weights_rankings()
+    Kaya9000.show_sda_coefficients()
+    Kaya9000.show_sda_coefficients_rankings()
+    Kaya9000.show_sda_weights()
+    Kaya9000.show_sda_weights_rankings()
 
     # P = np.prod(Kaya9000.dataT2)
     # print(P)

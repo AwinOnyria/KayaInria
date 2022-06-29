@@ -35,7 +35,7 @@ def import_data(namefile):
     for x in range(len(data_values)):
         normalized_data.append([])
         for i in range(len(data_values[x])):
-            normalized_data[-1].append(data_values[x][i] / data_values[x][0])
+            normalized_data[-1].append(data_values[x][i] / data_values[x][max(0, i - 1)])
 
     normalized_data_per_year = {}
     for y in years:
@@ -44,7 +44,7 @@ def import_data(namefile):
         for nd in normalized_data:
             normalized_data_per_year[y].append(nd[i])
     
-    return(years, coefficient_names, data_values, normalized_data, normalized_data_per_year)
+    return(years, coefficient_names, normalized_data_per_year)
 
 
 
@@ -277,6 +277,33 @@ class kayaData:
         mng.window.showMaximized()
         plt.show()
 
+    def save_sda_weights_rankings(self, path = ""):
+        plt.figure(figsize=(1920/100, 1080/100), dpi = 100)
+        fig_ranks = plt.subplot()
+        d = 1
+        max_rank = 0
+        x_labels = []
+        for i in range(self.n):
+            x = []
+            for r in range(self.n):
+                if max_rank < self.sda_rank_weights[i][r]:
+                    max_rank = self.sda_rank_weights[i][r]
+                x.append( d + r)
+                x_labels.append(self.reduced_c_names[i] + "\nR" + str(r+1))
+            d += self.n 
+            bars = fig_ranks.bar(x, self.sda_rank_weights[i], width = .95, color = COLORS[i], linewidth = .7, edgecolor = "black")
+            fig_ranks.bar_label(bars)
+        fig_ranks.set(xlim = (0, self. n * self.n + 1), ylim = (0, max_rank + 1), yticks = np.arange(1, max_rank + 2))
+        fig_ranks.set_xticks(np.arange(1, self.n * self.n + 1), x_labels)
+        fig_ranks.set_title("Nombre de fois où un poids se trouve au rang \"R\" en terme d'importance pour la variation de {} à {}".format(self.years[0], self.years[1]))
+        fig_ranks.set_xlabel("Nom et rang \"R\" des poids")
+        fig_ranks.set_ylabel("Nombre de décomposition donnant le poids au rang \"R\"")
+        
+        mng = plt.get_current_fig_manager()
+        mng.window.showMaximized()
+        plt.savefig(path + str(self.years[0]) + "-" + str(self.years[1]) + " wr.svg", format = "svg", dpi = 100)
+        plt.close()
+
 
     # IDA
 
@@ -414,9 +441,9 @@ def main():
 
     
     
-    (Years, Names, Data, NData, NDataY) = import_data("kayaData.csv")
+    (Years, Names, NDataY) = import_data("Data/WorldData.csv")
 
-    Kaya9000 = kayaData(NDataY[1990], NDataY[2000], (1990, 2000), Names)
+    Kaya9000 = kayaData(NDataY[1990], NDataY[1991], (1990, 1991), Names)
     Kaya0005 = kayaData(NDataY[2000], NDataY[2005], (2000, 2005), Names)
     Kaya0510 = kayaData(NDataY[2005], NDataY[2010], (2005, 2010), Names)
     Kaya1014 = kayaData(NDataY[2010], NDataY[2014], (2010, 2014), Names)
@@ -424,10 +451,12 @@ def main():
     
 
     Kaya9000.sdaGlobal()
-    Kaya9000.show_sda_coefficients()
-    Kaya9000.show_sda_coefficients_rankings()
-    Kaya9000.show_sda_weights()
-    Kaya9000.show_sda_weights_rankings()
+    # Kaya9000.show_sda_coefficients()
+    # Kaya9000.show_sda_coefficients_rankings()
+    # Kaya9000.show_sda_weights()
+    # Kaya9000.show_sda_weights_rankings()
+    Kaya9000.save_sda_weights_rankings()
+
 
     # P = np.prod(Kaya9000.dataT2)
     # print(P)
@@ -458,12 +487,12 @@ def main():
     # print()
     # print(Kaya9000.ida_residuals(Kaya9000.ida_add_param_one))
 
-    Kaya9000.idaGlobal(0.1)
+    # Kaya9000.idaGlobal(0.1)
     # print(Kaya9000.ida_results)
 
     # print(Kaya9000.ida_mult_param_two(0))
 
-    Kaya9000.show_ida_trials()
+    # Kaya9000.show_ida_trials()
 
     # Kaya0005.sdaGlobal()
     # Kaya0005.show_sda_coefficients()

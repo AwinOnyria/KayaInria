@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from gpg import Data
 from analysisfunctions import *
 from math import factorial
 import numpy as np
@@ -38,13 +39,16 @@ def import_data(namefile):
             normalized_data[-1].append(data_values[x][i] / data_values[x][max(0, i - 1)])
 
     normalized_data_per_year = {}
+    data_per_year = {}
     for y in years:
         normalized_data_per_year[y] = []
+        data_per_year[y] = []
         i = years.index(y)
-        for nd in normalized_data:
-            normalized_data_per_year[y].append(nd[i])
+        for d in zip(normalized_data, data_values):
+            normalized_data_per_year[y].append(d[0][i])
+            data_per_year[y].append(d[1][i])
     
-    return(years, coefficient_names, normalized_data_per_year)
+    return(years, coefficient_names, data_per_year, normalized_data_per_year)
 
 
 
@@ -52,15 +56,18 @@ def import_data(namefile):
 class kayaData:
 
     def __init__(self, dataT1, dataT2, years = (0,0), coefficient_names = []):
-        self.dataT1 = dataT1
-        self.dataT2 = dataT2
+        self.dataT1 = dataT1.copy()
+        self.dataT2 = dataT2.copy()
+        self.n = len(dataT1) #The number of coefficients
+        for i in range(self.n):
+            self.dataT2[i] /= self.dataT1[i]
+            self.dataT1[i] /= self.dataT1[i]
         self.Y1 = np.prod(dataT1)
         self.Y2 = np.prod(dataT2)
         self.dataDelta = []
         for T in zip(dataT1, dataT2):
             self.dataDelta.append(T[1] - T[0])
         self.years = years
-        self.n = len(dataT1) #The number of coefficients
         self.coefficients_names = []
         self.reduced_c_names = []
         if coefficient_names == []:
@@ -299,11 +306,35 @@ class kayaData:
         fig_ranks.set_xlabel("Nom et rang \"R\" des poids")
         fig_ranks.set_ylabel("Nombre de décomposition donnant le poids au rang \"R\"")
         
-        mng = plt.get_current_fig_manager()
-        mng.window.showMaximized()
-        plt.savefig(path + str(self.years[0]) + "-" + str(self.years[1]) + " wr.svg", format = "svg", dpi = 100)
+        # mng = plt.get_current_fig_manager()
+        # mng.window.showMaximized()
+        plt.savefig(path + "wr |" + str(self.years[0]) + "-" + str(self.years[1]) + ".svg", format = "svg", dpi = 100)
         plt.close()
 
+    def save_sda_coefficients_rankings(self, path = ""):
+        plt.figure(figsize=(1920/100, 1080/100), dpi = 100)
+        fig_ranks = plt.subplot()
+        d = 1
+        max_rank = 0
+        x_labels = []
+        for i in range(self.n):
+            x = []
+            for r in range(self.n):
+                if max_rank < self.sda_rank_coefficients[i][r]:
+                    max_rank = self.sda_rank_coefficients[i][r]
+                x.append( d + r)
+                x_labels.append(self.reduced_c_names[i] + "\nR" + str(r+1))
+            d += self.n 
+            bars = fig_ranks.bar(x, self.sda_rank_coefficients[i], width = .95, color = COLORS[i], linewidth = .7, edgecolor = "black")
+            fig_ranks.bar_label(bars)
+        fig_ranks.set(xlim = (0, self. n * self.n + 1), ylim = (0, max_rank + 1), yticks = np.arange(1, max_rank + 2))
+        fig_ranks.set_xticks(np.arange(1, self.n * self.n + 1), x_labels)
+        fig_ranks.set_title("Nombre de fois où un coefficient se trouve au rang \"R\" en terme d'importance pour la variation de {} à {}".format(self.years[0], self.years[1]))
+        fig_ranks.set_xlabel("Nom et rang \"R\" des coefficients")
+        fig_ranks.set_ylabel("Nombre de décomposition donnant le coefficient au rang \"R\"")
+        
+        plt.savefig(path + "cr | " + str(self.years[0]) + "-" + str(self.years[1]) + ".svg", format = "svg", dpi = 100)
+        plt.close()
 
     # IDA
 
@@ -441,21 +472,29 @@ def main():
 
     
     
-    (Years, Names, NDataY) = import_data("Data/WorldData.csv")
+    (Years, Names, DataY, NDataY) = import_data("Data/WorldData.csv")
 
-    Kaya9000 = kayaData(NDataY[1990], NDataY[1991], (1990, 1991), Names)
-    Kaya0005 = kayaData(NDataY[2000], NDataY[2005], (2000, 2005), Names)
-    Kaya0510 = kayaData(NDataY[2005], NDataY[2010], (2005, 2010), Names)
-    Kaya1014 = kayaData(NDataY[2010], NDataY[2014], (2010, 2014), Names)
-    KayaGlobal = kayaData(NDataY[1990], NDataY[2014], (1990, 2014), Names)
-    
+    print(DataY)
+    print()
+    print(NDataY)
 
-    Kaya9000.sdaGlobal()
-    # Kaya9000.show_sda_coefficients()
-    # Kaya9000.show_sda_coefficients_rankings()
-    # Kaya9000.show_sda_weights()
-    # Kaya9000.show_sda_weights_rankings()
-    Kaya9000.save_sda_weights_rankings()
+    Kaya9000 = kayaData(DataY[1990], DataY[1991], (1990, 1991), Names)
+    # Kaya0005 = kayaData(NDataY[2000], NDataY[2005], (2000, 2005), Names)
+    # Kaya0510 = kayaData(NDataY[2005], NDataY[2010], (2005, 2010), Names)
+    # Kaya1014 = kayaData(NDataY[2010], NDataY[2014], (2010, 2014), Names)
+    # KayaGlobal = kayaData(NDataY[1990], NDataY[2014], (1990, 2014), Names)
+
+    print()
+    print(Kaya9000.dataT1)
+    print(Kaya9000.dataT2)
+    print(Kaya9000.dataDelta)
+
+    # Kaya9000.sdaGlobal()
+    # # Kaya9000.show_sda_coefficients()
+    # # Kaya9000.show_sda_coefficients_rankings()
+    # # Kaya9000.show_sda_weights()
+    # # Kaya9000.show_sda_weights_rankings()
+    # Kaya9000.save_sda_weights_rankings()
 
 
     # P = np.prod(Kaya9000.dataT2)

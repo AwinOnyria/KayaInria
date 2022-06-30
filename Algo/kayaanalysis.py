@@ -16,12 +16,16 @@ def main():
         os.system("mkdir results/" + r)
         os.system("mkdir results/" + r + "/sda")
         os.system("mkdir results/" + r + "/ida")
+        print()
+        print(r)
 
-        (Years, Names, NDataY) = import_data("Data/" + r + "Data.csv")
+        (Years, Names, DataY, NDataY) = import_data("Data/" + r + "Data.csv")
         for i in range(len(Years) - 1):
-            Kaya = kayaData(NDataY[Years[i]], NDataY[Years[i+1]], (Years[i], Years[i+1]), Names)
+            print(str(Years[i]) + " - " + str(Years[i+1]))
+            Kaya = kayaData(DataY[Years[i]], DataY[Years[i+1]], (Years[i], Years[i+1]), Names)
             Kaya.sdaGlobal()
             Kaya.save_sda_weights_rankings("results/" + r + "/sda/")
+            Kaya.save_sda_coefficients_rankings("results/" + r + "/sda/")
         
 
 

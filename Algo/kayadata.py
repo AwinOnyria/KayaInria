@@ -6,6 +6,7 @@ from math import factorial
 import numpy as np
 import matplotlib.pyplot as plt
 import csv
+import pprint
 
 COLORS = ["r", "b", "g", "m", "y", "c"]
 
@@ -65,7 +66,7 @@ class kayaData:
         self.Y1 = np.prod(dataT1)
         self.Y2 = np.prod(dataT2)
         self.dataDelta = []
-        for T in zip(dataT1, dataT2):
+        for T in zip(self.dataT1, self.dataT2):
             self.dataDelta.append(T[1] - T[0])
         self.years = years
         self.coefficients_names = []
@@ -80,7 +81,9 @@ class kayaData:
                     self.coefficients_names.append(coefficient_names[i])
                 else:
                     self.reduced_c_names.append(coefficient_names[i])
-        
+        self.coefficients_names.append("Residual")
+        self.reduced_c_names.append("Res")
+
         self.sdaMin = [0] * self.n
         self.sdaMax = [0] * self.n
         self.sda_range = [0] * self.n
@@ -104,6 +107,7 @@ class kayaData:
         self.ida_coefficients = {}
         self.ida_results = {}
         self.ida_alpha_values = {}
+        self.ida_rankings = {}
 
     def deltaYi(self, i):
         Y = self.dataT2[i]
@@ -339,74 +343,53 @@ class kayaData:
     # IDA
 
     def ida_mult_param_two(self, alpha = None):
-        # if alpha is None:
-        #     self.ida_coefficients["IDA mult_param_2 | a_weighting"] = mult_parametric_method_two(self.dataT1, self.dataT2, alpha)
-        # self.ida_coefficients["IDA mult_param_2 | α = " + str(alpha)] = mult_parametric_method_two(self.dataT1, self.dataT2, alpha)
         return mult_parametric_method_two(self.dataT1, self.dataT2, self.Y2 / self.Y1, alpha)
 
     def ida_add_param_one(self, alpha = 0.5):
-        # self.ida_coefficients["IDA add_param_one | α = " + str(alpha)] = add_parametric_method_one(self.dataT1, self.dataT2, alpha)
         return add_parametric_method_one(self.dataT1, self.dataT2, self.Y2 - self.Y1, alpha)
     
     def ida_add_non_param_one(self, alpha):
-        # self.ida_coefficients["IDA add_non_param_one"] = add_non_parametric_method_one(self.dataT1, self.dataT2)
         return add_non_parametric_method_one(self.dataT1, self.dataT2, self.Y2 - self.Y1, alpha)
     
     def ida_add_param_two(self, alpha = None):
-        # if alpha is None:
-        #     self.ida_coefficients["IDA add_param_two | a_weighting" + str(alpha)] = add_parametric_method_two(self.dataT1, self.dataT2, alpha)
-        # self.ida_coefficients["IDA add_param_two | α = " + str(alpha)] = add_parametric_method_two(self.dataT1, self.dataT2, alpha)
         return add_parametric_method_two(self.dataT1, self.dataT2, self.Y2 - self.Y1, alpha)
 
-    # def ida_residuals(self, func, incr=.1, mult=False, param=True):
-    #     if param:
-    #         residuals = {}
-    #         if mult:
-    #             if func(None) is not None:
-    #                 residuals[None] = abs(1 - (self.Y2 / self.Y1) / np.prod(func(None)))
-    #             for alpha in np.arange(0, 1, incr):
-    #                 residuals[round(alpha, 2)] = abs(1 - (self.Y2 / self.Y1) / np.prod(func(round(alpha, 2))))
-    #             residuals[1.0] = abs(1 - (self.Y2 / self.Y1) / np.prod(func(1.0)))
-    #         else:
-    #             if func(None) is not None:
-    #                 residuals[None] = abs(self.Y2 - self.Y1 - sum(func(None)))
-    #             for alpha in np.arange(0, 1, incr):
-    #                 residuals[round(alpha, 2)] = abs(self.Y2 - self.Y1 - sum(func(round(alpha, 2))))
-    #             residuals[1.0] = abs(self.Y2 - self.Y1 - sum(func(1.0)))
-    #         return residuals
-    #     else:
-    #         if mult:
-    #             return(-1, abs(1 - (self.Y2 / self.Y1) / np.prod(func())))
-    #         else:
-    #             return(-1, abs(sum(func())))
-
-    def ida_calculate(self, func, incr = .1):
+    def ida_calculate(self, func, key, incr = .1):
         results = {}
         for alpha in np.arange(0, 1+incr, incr):
+            rankings = {}
             if func(alpha) is None:
                 break
             else:
                 results[alpha] = func(alpha)
+                for i in range(self.n + 1):
+                    rankings[i] = results[alpha][i]
+                ranks = rank_dict(rankings, self.n + 1)
+                for r in zip(ranks, range(self.n + 1)):
+                    self.ida_rankings[key][r[0]][r[1]] += 1
         if func(None) is not None:
+            rankings = {}
             results[None] = func(None)
+            for i in range(self.n):
+                rankings[i] = results[None][i]
+            ranks = rank_dict(rankings, self.n + 1)
+            for r in zip(ranks, range(self.n + 1)):
+                if r[0] is None:
+                    self.ida_rankings[key][-1][r[1]] += 1
+                else:
+                    self.ida_rankings[key][r[0]][r[1]] += 1
         return results
 
 
     def idaGlobal(self, incr = .1):
         self.ida_functions = [self.ida_mult_param_two, self.ida_add_param_one, self.ida_add_non_param_one, self.ida_add_param_two]
         for f in self.ida_functions:
-            self.ida_results[str(f).split()[2].split(".")[1]] = self.ida_calculate(f, incr)
+            self.ida_rankings[str(f).split()[2].split(".")[1]] = []
+            for i in range(self.n + 1):
+                self.ida_rankings[str(f).split()[2].split(".")[1]].append([0] * (self.n + 1))
+            results = self.ida_calculate(f, str(f).split()[2].split(".")[1], incr)
+            self.ida_results[str(f).split()[2].split(".")[1]] = results
 
-        # for res in zip(self.ida_functions, self.ida_residuals_results.keys()):
-        #     if type(self.ida_residuals_results[res[1]]) == dict:
-        #         key = min_dict_key(self.ida_residuals_results[res[1]])
-        #         self.ida_coefficients[str(res[0][0]).split()[2].split(".")[1]] = res[0][0](key)
-        #         self.ida_coefficients[str(res[0][0]).split()[2].split(".")[1]].append(self.ida_residuals_results[res[1]][key])
-        #         self.ida_alpha_values[str(res[0][0]).split()[2].split(".")[1]] = key
-        #     else:
-        #         self.ida_coefficients[str(res[0][0]).split()[2].split(".")[1]] = res[0][0]()
-        #         self.ida_coefficients[str(res[0][0]).split()[2].split(".")[1]].append(self.ida_residuals_results[res[1]][1])
-        #         self.ida_alpha_values[str(res[0][0]).split()[2].split(".")[1]] = "No parameter"
 
     def show_ida_trials(self):
         for ida_name in self.ida_results.keys():
@@ -447,7 +430,58 @@ class kayaData:
             mng = plt.get_current_fig_manager()
             mng.window.showMaximized()
             plt.show()
-
+    
+    def show_ida_rankings(self):
+        for ida_name in self.ida_results.keys():
+            fig_ranks = plt.subplot()
+            d = 1
+            max_rank = 0
+            x_labels = []
+            for i in range(self.n + 1):
+                x = []
+                for r in range(self.n + 1):
+                    if max_rank < self.ida_rankings[ida_name][i][r]:
+                        max_rank = self.ida_rankings[ida_name][i][r]
+                    x.append( d + r)
+                    x_labels.append(self.reduced_c_names[i] + "\nR" + str(r+1))
+                d += self.n + 1
+                bars = fig_ranks.bar(x, self.ida_rankings[ida_name][i], width = .95, color = COLORS[i], linewidth = .7, edgecolor = "black")
+                fig_ranks.bar_label(bars)
+            fig_ranks.set(xlim = (0, (self.n + 1) * (self.n + 1) + 1), ylim = (0, max_rank + 1), yticks = np.arange(1, max_rank + 2))
+            fig_ranks.set_xticks(np.arange(1, (self.n + 1) * (self.n + 1) + 1), x_labels)
+            fig_ranks.set_title("Nombre de fois où un coefficient se trouve au rang \"R\" en terme d'importance pour la variation de {} à {} \n avec la méthode {}".format(self.years[0], self.years[1], ida_name))
+            fig_ranks.set_xlabel("Nom et rang \"R\" des coefficients")
+            fig_ranks.set_ylabel("Nombre de décomposition donnant le coefficient au rang \"R\"")
+            
+            mng = plt.get_current_fig_manager()
+            mng.window.showMaximized()
+            plt.show()
+                
+    def save_ida_rankings(self, path = ""):
+        for ida_name in self.ida_results.keys():
+            plt.figure(figsize=(1920/100, 1080/100), dpi = 100)
+            fig_ranks = plt.subplot()
+            d = 1
+            max_rank = 0
+            x_labels = []
+            for i in range(self.n + 1):
+                x = []
+                for r in range(self.n + 1):
+                    if max_rank < self.ida_rankings[ida_name][i][r]:
+                        max_rank = self.ida_rankings[ida_name][i][r]
+                    x.append( d + r)
+                    x_labels.append(self.reduced_c_names[i] + "\nR" + str(r+1))
+                d += self.n + 1
+                bars = fig_ranks.bar(x, self.ida_rankings[ida_name][i], width = .95, color = COLORS[i], linewidth = .7, edgecolor = "black")
+                fig_ranks.bar_label(bars)
+            fig_ranks.set(xlim = (0, (self. n + 1) * (self.n + 1) + 1), ylim = (0, max_rank + 1), yticks = np.arange(1, max_rank + 2))
+            fig_ranks.set_xticks(np.arange(1, (self.n + 1) * (self.n + 1) + 1), x_labels)
+            fig_ranks.set_title("Nombre de fois où un coefficient se trouve au rang \"R\" en terme d'importance pour la variation de {} à {} \n avec la méthode {}".format(self.years[0], self.years[1], ida_name))
+            fig_ranks.set_xlabel("Nom et rang \"R\" des coefficients")
+            fig_ranks.set_ylabel("Nombre de décomposition donnant le coefficient au rang \"R\"")
+            
+            plt.savefig(path + ida_name + " | " + str(self.years[0]) + "-" + str(self.years[1]) + ".svg", format = "svg", dpi = 100)
+            plt.close()
 
     
 
@@ -464,99 +498,34 @@ class kayaData:
 
 
 def main():
-    # T1 = [2.39963380951199, 1/3.49203330338253, 5558.11979126848, 5280062644]
-    # T2 = [2.39146347617893, 1/5.04044509019937, 8016.70518839688, 6114324044]
-    # T3 = []
-    # for k in range(4):
-    #     T3.append(T2[k] / T1[k])
-
-    
     
     (Years, Names, DataY, NDataY) = import_data("Data/WorldData.csv")
 
-    print(DataY)
-    print()
-    print(NDataY)
+    # print(DataY)
+    # print()
+    # print(NDataY)
 
     Kaya9000 = kayaData(DataY[1990], DataY[1991], (1990, 1991), Names)
-    # Kaya0005 = kayaData(NDataY[2000], NDataY[2005], (2000, 2005), Names)
-    # Kaya0510 = kayaData(NDataY[2005], NDataY[2010], (2005, 2010), Names)
-    # Kaya1014 = kayaData(NDataY[2010], NDataY[2014], (2010, 2014), Names)
-    # KayaGlobal = kayaData(NDataY[1990], NDataY[2014], (1990, 2014), Names)
 
     print()
     print(Kaya9000.dataT1)
     print(Kaya9000.dataT2)
     print(Kaya9000.dataDelta)
 
-    # Kaya9000.sdaGlobal()
+    Kaya9000.sdaGlobal()
     # # Kaya9000.show_sda_coefficients()
-    # # Kaya9000.show_sda_coefficients_rankings()
+    # Kaya9000.show_sda_coefficients_rankings()
     # # Kaya9000.show_sda_weights()
     # # Kaya9000.show_sda_weights_rankings()
     # Kaya9000.save_sda_weights_rankings()
 
 
-    # P = np.prod(Kaya9000.dataT2)
-    # print(P)
-    # print("mult_param_two")
-    # print(Kaya9000.ida_mult_param_two(), np.prod(Kaya9000.ida_mult_param_two()), "res = ", P / np.prod(Kaya9000.ida_mult_param_two()))
-    # print(Kaya9000.ida_mult_param_two(0), np.prod(Kaya9000.ida_mult_param_two(0)), "res = ", P /  np.prod(Kaya9000.ida_mult_param_two(0)))
-    # print(Kaya9000.ida_mult_param_two(0.5), np.prod(Kaya9000.ida_mult_param_two(.5)), "res = ", P /  np.prod(Kaya9000.ida_mult_param_two(.5)))
-    # print(Kaya9000.ida_mult_param_two(1), np.prod(Kaya9000.ida_mult_param_two(1)), "res = ", P /  np.prod(Kaya9000.ida_mult_param_two(1)))
-    
-    # S = P - 1
-    # print("\n", S, sep ="")
-    # print("add_param_one")
-    # print(Kaya9000.ida_add_param_one(0), sum(Kaya9000.ida_add_param_one(0)), "res = ", S - sum(Kaya9000.ida_add_param_one(0)))
-    # print(Kaya9000.ida_add_param_one(), sum(Kaya9000.ida_add_param_one()), "res = ", S - sum(Kaya9000.ida_add_param_one()))
-    # print(Kaya9000.ida_add_param_one(1), sum(Kaya9000.ida_add_param_one(1)), "res = ", S - sum(Kaya9000.ida_add_param_one(1)))
-    # print("add_non_param_one")
-    # print(Kaya9000.ida_add_non_param_one(), sum(Kaya9000.ida_add_non_param_one()), "res = ", S - sum(Kaya9000.ida_add_non_param_one()))
-    # print("add_param_two")
-    # print(Kaya9000.ida_add_param_two(), sum(Kaya9000.ida_add_param_two()), "res = ", S - sum(Kaya9000.ida_add_param_two()))
-    # print(Kaya9000.ida_add_param_two(0), sum(Kaya9000.ida_add_param_two(0)), "res = ", S - sum(Kaya9000.ida_add_param_two(0)))
-    # print(Kaya9000.ida_add_param_two(0.5), sum(Kaya9000.ida_add_param_two(.5)), "res = ", S - sum(Kaya9000.ida_add_param_two(.5)))
-    # print(Kaya9000.ida_add_param_two(1), sum(Kaya9000.ida_add_param_two(1)), "res = ", S - sum(Kaya9000.ida_add_param_two(1)))
-    # print("\nsda")
-    # print(Kaya9000.sda_mean_coefficients)
-    # print(sum(Kaya9000.sda_mean_coefficients))
-
-    # print(Kaya9000.ida_residuals(Kaya9000.ida_mult_param_two, mult=True))
-    # print()
-    # print(Kaya9000.ida_residuals(Kaya9000.ida_add_param_one))
-
-    # Kaya9000.idaGlobal(0.1)
+    Kaya9000.idaGlobal(0.1)
+    # print(Kaya9000.sda_rank_weights)
+    # pprint.pprint(Kaya9000.ida_rankings)
+    Kaya9000.show_ida_rankings()
     # print(Kaya9000.ida_results)
-
-    # print(Kaya9000.ida_mult_param_two(0))
-
-    # Kaya9000.show_ida_trials()
-
-    # Kaya0005.sdaGlobal()
-    # Kaya0005.show_sda_coefficients()
-    # Kaya0005.show_sda_coefficients_rankings()
-    # Kaya0005.show_sda_weights()
-    # Kaya0005.show_sda_weights_rankings()
-
-    # Kaya0510.sdaGlobal()
-    # Kaya0510.show_sda_coefficients()
-    # Kaya0510.show_sda_coefficients_rankings()
-    # Kaya0510.show_sda_weights()
-    # Kaya0510.show_sda_weights_rankings()
-
-    # Kaya1014.sdaGlobal()
-    # Kaya1014.show_sda_coefficients()
-    # Kaya1014.show_sda_coefficients_rankings()
-    # Kaya1014.show_sda_weights()
-    # Kaya1014.show_sda_weights_rankings()
-
-    # KayaGlobal.sdaGlobal()
-    # KayaGlobal.show_sda_coefficients()
-    # KayaGlobal.show_sda_coefficients_rankings()
-    # KayaGlobal.show_sda_weights()
-    # KayaGlobal.show_sda_weights_rankings()
-
+    Kaya9000.show_ida_trials()
 
 if __name__ == "__main__":
     main()

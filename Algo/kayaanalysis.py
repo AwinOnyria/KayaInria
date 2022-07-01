@@ -23,9 +23,13 @@ def main():
         for i in range(len(Years) - 1):
             print(str(Years[i]) + " - " + str(Years[i+1]))
             Kaya = kayaData(DataY[Years[i]], DataY[Years[i+1]], (Years[i], Years[i+1]), Names)
+
             Kaya.sdaGlobal()
             Kaya.save_sda_weights_rankings("results/" + r + "/sda/")
             Kaya.save_sda_coefficients_rankings("results/" + r + "/sda/")
+
+            Kaya.idaGlobal()
+            Kaya.save_ida_rankings("results/" + r +"/ida/")
         
 
 

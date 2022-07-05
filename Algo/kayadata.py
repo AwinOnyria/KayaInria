@@ -63,8 +63,8 @@ class kayaData:
         for i in range(self.n):
             self.dataT2[i] /= self.dataT1[i]
             self.dataT1[i] /= self.dataT1[i]
-        self.Y1 = np.prod(dataT1)
-        self.Y2 = np.prod(dataT2)
+        self.Y1 = np.prod(self.dataT1)
+        self.Y2 = np.prod(self.dataT2)
         self.dataDelta = []
         for T in zip(self.dataT1, self.dataT2):
             self.dataDelta.append(T[1] - T[0])
@@ -340,6 +340,12 @@ class kayaData:
         plt.savefig(path + "cr | " + str(self.years[0]) + "-" + str(self.years[1]) + ".svg", format = "svg", dpi = 100)
         plt.close()
 
+    def sda_send_coefficients_rankings(self):
+        return("sda coefficients", self.sda_rank_coefficients)
+
+    def sda_send_weights_rankings(self):
+        return("sda weights", self.sda_rank_weights)
+
     # IDA
 
     def ida_mult_param_two(self, alpha = None):
@@ -483,6 +489,12 @@ class kayaData:
             plt.savefig(path + ida_name + " | " + str(self.years[0]) + "-" + str(self.years[1]) + ".svg", format = "svg", dpi = 100)
             plt.close()
 
+    def ida_send_rankings(self):
+        rankings = {}
+        for ida_name in self.ida_results.keys():
+            rankings[ida_name] = self.ida_rankings[ida_name]
+        return(rankings)
+
     
 
 
@@ -505,17 +517,17 @@ def main():
     # print()
     # print(NDataY)
 
-    Kaya9000 = kayaData(DataY[1990], DataY[1991], (1990, 1991), Names)
+    Kaya9000 = kayaData(DataY[1990], DataY[2000], (1990, 2000), Names)
 
     print()
-    print(Kaya9000.dataT1)
-    print(Kaya9000.dataT2)
-    print(Kaya9000.dataDelta)
+    # print(Kaya9000.dataT1)
+    # print(Kaya9000.dataT2)
+    # print(Kaya9000.dataDelta)
 
     Kaya9000.sdaGlobal()
-    # # Kaya9000.show_sda_coefficients()
+    # Kaya9000.show_sda_coefficients()
     # Kaya9000.show_sda_coefficients_rankings()
-    # # Kaya9000.show_sda_weights()
+    # Kaya9000.show_sda_weights()
     # # Kaya9000.show_sda_weights_rankings()
     # Kaya9000.save_sda_weights_rankings()
 
@@ -523,7 +535,7 @@ def main():
     Kaya9000.idaGlobal(0.1)
     # print(Kaya9000.sda_rank_weights)
     # pprint.pprint(Kaya9000.ida_rankings)
-    Kaya9000.show_ida_rankings()
+    # Kaya9000.show_ida_rankings()
     # print(Kaya9000.ida_results)
     Kaya9000.show_ida_trials()
 

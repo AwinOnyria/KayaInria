@@ -1,11 +1,61 @@
 #!/usr/bin/env python3
 
 from tkinter import W
+
+from progressbar import Percentage
 from kayadata import *
 import os
 
 REGIONS = ["World"] #, "EU", "USA", "China", "MENA", "AWC", "AES"]
 # METHODS = [("sda weights", 4), ("sda coefficients", 4), ("ida_mult_param_two", 5), ("ida_add_param_one",5) ("ida_add_non_param_one", 5), ("ida_add_param_two", 5)]
+
+
+def show_regional_results(results, region, names, Y1, Y2):
+       
+    for method in results.keys():
+        perc = []
+        for i in range(len(results[method][0])):
+            perc.append([0] * len(results[method]))
+        total = sum(results[method][0])
+        for i in range(len(results[method])):
+            for j in range(len(results[method][i])):
+                perc[j][i] += results[method][i][j]
+        for i in range(len(perc)):
+            for j in range(len(perc[i])):
+                perc[i][j] /= total
+                perc[i][j] = round(perc[i][j], 5)
+        # pprint.pprint(perc)
+        
+        fig = plt.subplot()
+        labels = []
+        bottoms = [0] * len(perc)
+        for i in range(len(names)):
+            if i%2:
+                labels.append(names[i])
+        if "sda" not in method:
+            labels.append("Res")
+        for i in range(len(perc)):
+            # print()
+            # print("bottoms : ", bottoms)
+            # print("perc : ", perc[i])
+            fig.bar(labels, perc[i], 0.9, bottom = bottoms, linewidth = .7, edgecolor = "black", label = "Rank " + str(i+1))
+            for j in range(len(perc[i])):
+                bottoms[j] += perc[i][j]
+        fig.set_ylabel("Percentage")
+        fig.legend()
+        fig.set_title("Répartition des rangs selon les coefficients de l'identité de Kaya \n avec la méthode : " + method)
+
+        mng = plt.get_current_fig_manager()
+        mng.window.showMaximized()
+        plt.show()
+
+
+            
+
+
+def show_regional_evolution(evolution, region, Y1, Y2):
+    pass
+
 
 def main():
 
@@ -26,7 +76,7 @@ def main():
         region_evolution = {}
         com = 0
 
-        for i in range(len(Years) - 20):
+        for i in range(len(Years) - 1):
             com += 1
             print(str(Years[i]) + " - " + str(Years[i+1]))
             Kaya = kayaData(DataY[Years[i]], DataY[Years[i+1]], (Years[i], Years[i+1]), Names)
@@ -46,7 +96,6 @@ def main():
                 for i in range(len(w_rankings[1])):
                     for j in range(len(w_rankings[1][i])):
                         region_results[w_rankings[0]][i][j] += w_rankings[1][i][j]
-            print(region_evolution["sda weights"])
             if c_rankings[0] not in region_results.keys():
                 region_results[c_rankings[0]] = c_rankings[1].copy()
                 region_evolution[c_rankings[0]] = [[]]
@@ -74,17 +123,19 @@ def main():
                             region_results[method][i][j] += ida_rankings[method][i][j]
 
 
-        print()
-        print()
-        pprint.pprint(region_results)
+        # print()
+        # print()
+        # pprint.pprint(region_results)
 
-        # for method in region_results.keys():
-        #     print("\n" + method)
-        #     for c in region_results[method]:
-        #         print(sum(c))
+        # # for method in region_results.keys():
+        # #     print("\n" + method)
+        # #     for c in region_results[method]:
+        # #         print(sum(c))
 
-        pprint.pprint(region_evolution)
-        print(com, len(region_evolution["sda weights"]))
+        # pprint.pprint(region_evolution)
+        # print(com, len(region_evolution["sda weights"]))
+
+        show_regional_results(region_results, r, Names, 0, 0)
         
 
 

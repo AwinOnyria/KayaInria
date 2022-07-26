@@ -6,8 +6,12 @@ from progressbar import Percentage
 from kayadata import *
 import os
 
-REGIONS = ["World"] #, "EU", "USA", "China", "MENA", "AWC", "AES"]
+REGIONS = ["World", "EU", "USA", "China", "MENA", "AWC", "AES"]
 # METHODS = [("sda weights", 4), ("sda coefficients", 4), ("ida_mult_param_two", 5), ("ida_add_param_one",5) ("ida_add_non_param_one", 5), ("ida_add_param_two", 5)]
+
+
+def add_lists(mat):
+    pass
 
 
 def show_regional_results(results, region, names, Y1, Y2):
@@ -35,9 +39,6 @@ def show_regional_results(results, region, names, Y1, Y2):
         if "sda" not in method:
             labels.append("Res")
         for i in range(len(perc)):
-            # print()
-            # print("bottoms : ", bottoms)
-            # print("perc : ", perc[i])
             fig.bar(labels, perc[i], 0.9, bottom = bottoms, linewidth = .7, edgecolor = "black", label = "Rank " + str(i+1))
             for j in range(len(perc[i])):
                 bottoms[j] += perc[i][j]
@@ -50,8 +51,37 @@ def show_regional_results(results, region, names, Y1, Y2):
         plt.show()
 
 
-            
+def save_regional_results(results, method, names, path, Y1, Y2):
+    perc = []
+    for i in range(len(results[method][0])):
+        perc.append([0] * len(results[method]))
+    total = sum(results[method][0])
+    for i in range(len(results[method])):
+        for j in range(len(results[method][i])):
+            perc[j][i] += results[method][i][j]
+    for i in range(len(perc)):
+        for j in range(len(perc[i])):
+            perc[i][j] /= total
+            perc[i][j] = round(perc[i][j], 5)
+    
+    plt.figure(figsize=(1920/100, 1080/100), dpi = 100)
+    fig = plt.subplot()
+    labels = []
+    bottoms = [0] * len(perc)
+    for i in range(len(names)):
+        if i%2:
+            labels.append(names[i])
+    if "sda" not in method:
+        labels.append("Res")
+    for i in range(len(perc)):
+        fig.bar(labels, perc[i], 0.9, bottom = bottoms, linewidth = .7, edgecolor = "black", label = "Rank " + str(i+1))
+        for j in range(len(perc[i])):
+            bottoms[j] += perc[i][j]
+    fig.set_ylabel("Percentage")
+    fig.legend()
+    fig.set_title("Répartition des rangs selon les coefficients de l'identité de Kaya \n avec la méthode : " + method)
 
+    plt.savefig(path + "Distribution des rangs de " + Y1 + " à " + Y2 + " avec la méthode : " + method, format = "svg", dpi = 100)
 
 def show_regional_evolution(evolution, region, Y1, Y2):
     pass
@@ -122,6 +152,9 @@ def main():
                         for j in range(len(ida_rankings[method][i])):
                             region_results[method][i][j] += ida_rankings[method][i][j]
 
+        for method in region_results.keys():
+            save_regional_results(region_results, method, Names, "results/" + r +"/", str(Years[0]), str(Years[-1]))
+
 
         # print()
         # print()
@@ -133,9 +166,9 @@ def main():
         # #         print(sum(c))
 
         # pprint.pprint(region_evolution)
-        # print(com, len(region_evolution["sda weights"]))
+        # # print(com, len(region_evolution["sda weights"]))
 
-        show_regional_results(region_results, r, Names, 0, 0)
+        # show_regional_results(region_results, r, Names, 0, 0)
         
 
 

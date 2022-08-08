@@ -83,7 +83,7 @@ def save_regional_results(results, method, names, path, Y1, Y2):
 
     plt.savefig(path + "Distribution des rangs de " + Y1 + " à " + Y2 + " avec la méthode : " + method, format = "svg", dpi = 100)
 
-def show_regional_evolution(evolution, region, Y1, Y2):
+def show_regional_evolution(evolution, rank, region, Y1, Y2):
     pass
 
 

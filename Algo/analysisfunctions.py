@@ -88,8 +88,11 @@ def mult_parametric_method_two(dataT1, dataT2, result, alpha = None):
         if alpha is None:
             alpha = (dataT2[i] - dataT1[i]) / dataT1[i] - np.log(dataT2[i] / dataT1[i]) * Y1
             alpha /= 0 - (1 / dataT2[i] - 1 / dataT1[i]) * (dataT2[i] - dataT1[i])
-        D_factors.append(np.exp((dataT2[i] - dataT1[i]) * (1 / dataT1[i] + alpha * (1 / dataT2[i] - 1 / dataT1[i]))))
+        D = np.exp((dataT2[i] - dataT1[i]) * (1 / dataT1[i] + alpha * (1 / dataT2[i] - 1 / dataT1[i])))
     D_factors.append(result / np.prod(D_factors))
+    for i in range(len(D_factors)):
+        if D_factors[i] <= 1:
+            D_factors[i] = 1/D_factors[i]
     return D_factors
 
 # Additive (Y2 - Y1) = sum
